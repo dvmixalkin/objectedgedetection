@@ -6,12 +6,9 @@ from rasterio import features
 from shapely.geometry import Polygon
 
 
-def auto_thresholding(image_orig, step=17):
-    target_square = image_orig.shape[0] * image_orig.shape[1] * 0.9
+def auto_thresholding(image, step=17):
+    target_square = image.shape[0] * image.shape[1] * 0.9
     mask_candidates = []
-    im_mean = image_orig.mean()
-    image = image_orig - im_mean
-    # image = np.invert(image_mean > 0)
 
     for threshold in range(0, 256, step):
         ret, thresh = cv2.threshold(image, threshold, 255, cv2.THRESH_BINARY_INV)

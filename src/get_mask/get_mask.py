@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from .filter_with_thresholds import auto_thresholding
 from .eliminate_holes_and_tiny_objects import eliminate_holes_and_tiny_objects
+from PIL import Image
 
 
 def get_mask(img_crop, return_type='mask', blur_mode='gaussian_blur', ksize=(7, 7), quantile=0.5):
@@ -16,7 +17,11 @@ def get_mask(img_crop, return_type='mask', blur_mode='gaussian_blur', ksize=(7, 
         image = img_crop
 
     # @TODO Automated thresholding
-    ret, thresh = auto_thresholding(image)
+    # ret1, thresh1 = auto_thresholding(image)
+    # Image.fromarray(thresh1).show()
+    ret, thresh = cv2.threshold(image, image.mean(), 255, cv2.THRESH_BINARY_INV)
+    # Image.fromarray(thresh2).show()
+
     cleared_mask = np.array(
         eliminate_holes_and_tiny_objects(thresh, width, height, eps=None, return_type=return_type))
 
