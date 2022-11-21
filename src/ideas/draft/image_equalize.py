@@ -13,8 +13,54 @@ def read_this(image_file, gray_scale=False):
     return image_src
 
 
+# Image preprocessing
+def eliminate_horizontal_lines(img, columns_range=500):
+    I0 = np.quantile(img[:, :columns_range], 0.99)
+    C = np.mean(img[:, :columns_range], axis=1) / I0
+    I0 = 1 if I0 == 0 else I0
+    C = np.where(C == 0, 1, C)
+    C = np.expand_dims(C, 1)
+    img = np.clip(img / C, 0, I0)
+    return img
+
+
+def eliminate_vertical_lines(img, rows_range=500):
+    I0 = np.quantile(img[:rows_range, :], 0.99)
+    C = np.mean(img[:rows_range, :], axis=0) / I0
+    I0 = 1 if I0 == 0 else I0
+    C = np.where(C == 0, 1, C)
+    img = np.clip(img / C, 0, I0)
+    return img
+
+
+def eliminate_lines(img, columns_range=500, eliminate_hotizontal_lines=True, eliminate_vert_lines=True):
+    if eliminate_hotizontal_lines:
+        img = eliminate_horizontal_lines(img, columns_range=columns_range)
+    if eliminate_vert_lines:
+        img = eliminate_vertical_lines(img, rows_range=columns_range)
+    return img
+
+
+def plot(image_src, image_eq, cmap_val):
+    fig = plt.figure(figsize=(10, 20))
+
+    ax1 = fig.add_subplot(2, 2, 1)
+    ax1.axis("off")
+    ax1.title.set_text('Original')
+    ax2 = fig.add_subplot(2, 2, 2)
+    ax2.axis("off")
+    ax2.title.set_text("Equalized")
+
+    ax1.imshow(image_src, cmap=cmap_val)
+    ax2.imshow(image_eq, cmap=cmap_val)
+
+
 def equalize_this_v1(image_file, with_plot=False, gray_scale=False):
-    image_src = read_this(image_file=image_file, gray_scale=gray_scale)
+    if isinstance(image_file, str):
+        image_src = read_this(image_file=image_file, gray_scale=gray_scale)
+    else:
+        image_src = image_file
+
     if not gray_scale:
         r_image, g_image, b_image = cv2.split(image_src)
 
@@ -29,17 +75,7 @@ def equalize_this_v1(image_file, with_plot=False, gray_scale=False):
         cmap_val = 'gray'
 
     if with_plot:
-        fig = plt.figure(figsize=(10, 20))
-
-        ax1 = fig.add_subplot(2, 2, 1)
-        ax1.axis("off")
-        ax1.title.set_text('Original')
-        ax2 = fig.add_subplot(2, 2, 2)
-        ax2.axis("off")
-        ax2.title.set_text("Equalized")
-
-        ax1.imshow(image_src, cmap=cmap_val)
-        ax2.imshow(image_eq, cmap=cmap_val)
+        plot(image_src, image_eq, cmap_val)
         return True
     return image_eq
 
@@ -68,8 +104,11 @@ def enhance_contrast(image_matrix, bins=256):
     return image_eq
 
 
-def equalize_this_v2(image_file, with_plot=False, gray_scale=False, bins=256):
-    image_src = read_this(image_file=image_file, gray_scale=gray_scale)
+def equalize_this_v2(image_file, with_plot=False, gray_scale=False):
+    if isinstance(image_file, str):
+        image_src = read_this(image_file=image_file, gray_scale=gray_scale)
+    else:
+        image_src = image_file
     if not gray_scale:
         r_image = image_src[:, :, 0]
         g_image = image_src[:, :, 1]
@@ -86,24 +125,53 @@ def equalize_this_v2(image_file, with_plot=False, gray_scale=False, bins=256):
         cmap_val = 'gray'
 
     if with_plot:
-        fig = plt.figure(figsize=(10, 20))
-
-        ax1 = fig.add_subplot(2, 2, 1)
-        ax1.axis("off")
-        ax1.title.set_text('Original')
-        ax2 = fig.add_subplot(2, 2, 2)
-        ax2.axis("off")
-        ax2.title.set_text("Equalized")
-
-        ax1.imshow(image_src, cmap=cmap_val)
-        ax2.imshow(image_eq, cmap=cmap_val)
+        plot(image_src, image_eq, cmap_val)
         return True
     return image_eq
 
 
+def equalize_this_v1_vs_v2(image_file, with_plot=False, gray_scale=False):
+    if isinstance(image_file, str):
+        image_src = read_this(image_file=image_file, gray_scale=gray_scale)
+    else:
+        image_src = image_file
+
+    cmap_val = None if not gray_scale else 'gray'
+
+    image_eq_v1 = equalize_this_v1(image_file=image_src, with_plot=False)
+    image_eq_v2 = equalize_this_v2(image_file=image_src, with_plot=False)
+    # diff = image_eq_v1 - image_eq_v2
+    # diff_v12 = np.clip(image_eq_v1 - image_eq_v2, 0)
+    # diff_v21 = image_eq_v2 - image_eq_v1
+    if with_plot:
+        fig = plt.figure(figsize=(15, 30))
+        ax1 = fig.add_subplot(3, 1, 1)
+        ax1.axis("off")
+        ax1.title.set_text('Original')
+
+        ax2 = fig.add_subplot(3, 1, 2)
+        ax2.axis("off")
+        ax2.title.set_text("Equalized_v1")
+
+        ax3 = fig.add_subplot(3, 1, 3)
+        ax3.axis("off")
+        ax3.title.set_text("Equalized_v2")
+
+        ax1.imshow(image_src, cmap=cmap_val)
+        ax2.imshow(image_eq_v1, cmap=cmap_val)
+        ax3.imshow(image_eq_v2, cmap=cmap_val)
+
+
 def main():
-    equalize_this_v1(image_file='Lenna.png', with_plot=True)
-    equalize_this_v2(image_file='Lenna.png', with_plot=True, gray_scale=True)
+    from PIL import Image
+    npz = np.load('../../../examples/input/20210331STM0104727.npz')['raw_image_low']
+    image_src = (npz / npz.max()) * 255
+    image_src = eliminate_lines(image_src)
+    image_src = np.array(Image.fromarray(image_src).convert('RGB'))
+
+    # equalize_this_v1(image_file=image_src, with_plot=True)
+    # equalize_this_v2(image_file=image_src, with_plot=True)  # , gray_scale=True
+    equalize_this_v1_vs_v2(image_src, with_plot=True, gray_scale=False)
 
 
 if __name__ == '__main__':
