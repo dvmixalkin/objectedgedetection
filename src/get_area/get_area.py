@@ -17,13 +17,13 @@ def get_area(img_crop, area_type='mask', blur_mode='gaussian_blur', ksize=(7, 7)
     if blur_mode == 'simple_blur':
         image = cv2.blur(img_crop, ksize)
     elif blur_mode == 'gaussian_blur':
-        image = cv2.GaussianBlur(img_crop, ksize, 0)
+        image = cv2.GaussianBlur(img_crop.astype(np.uint8), ksize, 0)
     else:
         image = img_crop
 
     # @TODO Automated thresholding
     # ret1, thresh1 = auto_thresholding(image)
-    ret, thresh = cv2.threshold(image, image.mean(), 255, cv2.THRESH_BINARY_INV)
+    ret, thresh = cv2.threshold(image.astype(float), image.mean(), 255, cv2.THRESH_BINARY_INV)
 
     # check for platform and remove it if exists
     thresh = remove_platform(thresh, pad=pad)
