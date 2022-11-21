@@ -19,6 +19,8 @@ def vis_polygon(image, polygon, is_closed=True,
                 hole_point_coordinate=None,
                 color=(255, 255, 153),
                 thickness=2):
+    if isinstance(polygon, shapely.geometry.Polygon):
+        polygon = get_np_points_from_polygon(polygon)
     height, width = image.shape
     if len(image.shape) == 2:
         img = (np.stack([image, image, image]).transpose(1, 2, 0)).astype(np.uint8)
