@@ -43,6 +43,7 @@ def refine_polygons(image, polygons, debug=False, version=3):
         elif version == 3:
             # @TODO WIP
             poly = search_anomaly_v3(image, poly, debug=debug)
+            # poly = search_anomaly_v3(image, polygon_, debug=debug)
         else:
             raise NotImplemented
 
