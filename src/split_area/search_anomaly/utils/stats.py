@@ -40,4 +40,4 @@ def get_stats(version, coordinates, interval=100, k=1.1, image=None):
     elif version == 2:
         return get_peaks_v2(coordinates)
     elif version == 3:
-        return get_peaks_v3(coordinates, image)
+        return get_peaks_v3(coordinates, image, sector_len=7, sub_interval_len=5)
