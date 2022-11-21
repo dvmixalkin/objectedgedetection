@@ -4,6 +4,7 @@ from .stats import get_stats
 from .distance import filter_through_manhattan_distance
 from .filters import filter_polygon_by_indices
 from .polygon_rupture import find_rapture_by_axis
+from src.ideas.visualize import vis_polygon
 
 
 def prepare_intervals(polygon_original, step_size, pix_min_dist=None,
@@ -110,18 +111,46 @@ def prepare_intervals_v3(polygon_original, step_size, image=None):
     )
 
 
-def get_area_center_point(working_data, tmp):
+def get_area_center_point(working_data, tmp, image=None):
     print(working_data.shape, [tmp[:, 0].min(), tmp[:, 1].max()])
+    # vis_polygon(
+    #     image, working_data,
+    #     x_bounds_coordinates=None,
+    #     y_bounds_coordinates=None,
+    #     hole_point_coordinate=None
+    # )
+
+    # берем ломаные на зхаданном интервале
     tmp_working_data = filter_polygon_by_indices(
         working_data, interval=[tmp[:, 0].min(), tmp[:, 1].max()])[0]  # working_data[0, indexes_inner]
+    # vis_polygon(
+    #     image, tmp_working_data,
+    #     x_bounds_coordinates=None,
+    #     y_bounds_coordinates=None,
+    #     hole_point_coordinate=None
+    # )
 
-    # ищем минимум по Y на отфильтрованном интервале
+    # ищем минимум по Y на отфильтрованном интервале (индекс для Y-ов)
     y_min, y_max, index = find_rapture_by_axis(array=tmp_working_data, axis=1)
+    # vis_polygon(
+    #     image, tmp_working_data,
+    #     x_bounds_coordinates=None,
+    #     y_bounds_coordinates=[y_min, y_max],
+    #     hole_point_coordinate=None
+    # )
+
+    # берем верхнюю ломаную на интервале
     upper_poly_line = tmp_working_data[tmp_working_data[:, 1] <= y_min]
+
+    # ищем на верхней ломаной миксимальную точку по Y
     upper_high_peak_points = upper_poly_line[upper_poly_line[:, 1] == y_min]
+
+    # проверка на количество точек с минимальным значением по Y. Если их несколько, считаем расстояние между ними
     mean_value = np.abs(upper_high_peak_points[:, 0] - np.median(upper_high_peak_points[:, 0]))
+    # берем связку точек с минмальным расстоянием
     min_difference = mean_value.min()
     top_candidates = upper_high_peak_points[mean_value == min_difference]
+
     # point_to_draw точка минимума на верхней части полигона, относительно нее и будет формироваться альфа-область
     # для разделения
     if top_candidates.shape[0] > 1:
