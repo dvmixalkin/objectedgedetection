@@ -30,12 +30,12 @@ class EdgeDetector:
         polygons = self.get_area(
             cropped_image,
             area_type='polygon',
-            blur_mode='no_blur',  # gaussian
+            blur_mode='gaussian_blur',  # gaussian
             ksize=(7, 7),
             quantile=0.5,
             pad=pad
         )
-
+        # vis_polygon(cropped_image, polygons[0])
         # 4) split polygon to goods positions
         polygons = self.split_area(cropped_image, polygons)
         # 5) convert local coordinates to global
@@ -64,7 +64,7 @@ def main():
     else:
         NotImplemented
 
-    i = 3
+    i = 1
 
     npz_path = str(filenames[i])
     if anno_frmt == 'yolo_output':
