@@ -5,14 +5,18 @@ from rasterio import features
 from shapely.geometry import Polygon
 
 
+def mask2poly(mask):
+    all_polygons = []
+    for shape, value in features.shapes(mask.astype(np.uint8), mask=(mask > 0),
+                                        transform=rasterio.Affine(1.0, 0, 0, 0, 1.0, 0)):
+        all_polygons.append(shapely.geometry.shape(shape))
+    return all_polygons
+
+
 def eliminate_holes_and_tiny_objects(target_mask, width, height, eps=None, store_single=True, return_type='polygon',
                                      debug=False):
     assert return_type in ['polygon', 'mask', 'coordinates'], 'Specify correct return type.'
-    all_polygons = []
-    for shape, value in features.shapes(target_mask.astype(np.uint8), mask=(target_mask > 0),
-                                        transform=rasterio.Affine(1.0, 0, 0, 0, 1.0, 0)):
-        all_polygons.append(shapely.geometry.shape(shape))
-
+    all_polygons = mask2poly(mask=target_mask)
     if store_single and all_polygons != []:
         actual_polygon = None
         previous_max_area = 0
