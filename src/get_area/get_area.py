@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from PIL import Image
 from .eliminate_holes_and_tiny_objects import eliminate_holes_and_tiny_objects
 
 import rasterio
@@ -12,7 +13,7 @@ def auto_thresholding(image_orig, start_position=None, step=17, pad=40):
     target_square = image_orig.shape[0] * image_orig.shape[1] * 0.9
     mask_candidates = []
     im_mean = image_orig.mean()
-    image = image_orig - im_mean
+    image = image_orig  # - im_mean
     # image = np.invert(image_mean > 0)
     if start_position is None:
         for threshold in range(0, 256, step):
@@ -73,11 +74,21 @@ def get_area(img_crop, area_type='mask', blur_mode='gaussian_blur', ksize=(7, 7)
         image = img_crop
 
     # @TODO Automated thresholding
-    ret, thresh = auto_thresholding(image, start_position=image.mean())
-    # ret, thresh = cv2.threshold(image.astype(float), image.mean(), 255, cv2.THRESH_BINARY_INV)
-    # check for platform and remove it if exists
-    thresh = remove_platform(thresh, pad=pad)
+    # ret, thresh = auto_thresholding(image, start_position=image.mean())
 
+    # new block
+    thresh = np.ones_like(image) * 255
+    mask = image < (image.mean() * 2.)
+    thresh[mask] = image[mask]
+    thresh = np.invert(thresh)
+    # Image.fromarray(thresh).show()
+
+    # ret, thresh = cv2.threshold(image.astype(float), image.mean()*0.8, 255, cv2.THRESH_BINARY_INV)
+    # check for platform and remove it if exists
+
+    thresh = remove_platform(thresh, pad=pad)
+    # to smooth lone pixels
+    thresh = cv2.GaussianBlur(thresh.astype(np.uint8), (15,15), 0) > 0
     # remove holes from mask
     cleared_mask = eliminate_holes_and_tiny_objects(
         thresh, width, height, eps=None, return_type=area_type, store_single=False
