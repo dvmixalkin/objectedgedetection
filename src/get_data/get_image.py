@@ -28,7 +28,10 @@ def get_cropped_image(image, crop_coordinates, pad=0):
 
 
 def get_image(name, old_version=False):
-    img_raw = np.load(name)['raw_image_low']
+    try:
+        img_raw = np.load(name)['raw_image_low']
+    except:
+        img_raw = name['raw_image_low']
     img_raw = img_raw if old_version else ((img_raw / img_raw.max()) * 255).astype(np.uint8)
     img0 = np.copy(img_raw)
     img0 = eliminate_lines(img0)
