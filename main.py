@@ -36,6 +36,16 @@ class EdgeDetector:
             return json.loads(annotations)
         return annotations
 
+    @staticmethod
+    def upscale_to_world_coordinates(polygons, cropp_coordinates, pad):
+        world_coordinates_polygons = []
+        for polygon in polygons:
+            np_polygon = np.array(polygon)
+            np_polygon[:, 0] += cropp_coordinates[0] - pad
+            np_polygon[:, 1] += cropp_coordinates[1] - pad
+            world_coordinates_polygons.append(np_polygon.tolist())
+        return world_coordinates_polygons
+
     def process(self, image_object, anno_object, anno_format='yolo_output', pad=50):
         try:
             # 0) get data and check for correctness
@@ -62,14 +72,9 @@ class EdgeDetector:
             polygons = self.split_area(cropped_image, polygons)
 
             # 5) convert local coordinates to global
-            world_coordinates_polygons = []
-            for polygon in polygons:
-                np_polygon = np.array(polygon)
-                np_polygon[:, 0] += cropp_coordinates[0]-pad
-                np_polygon[:, 1] += cropp_coordinates[1]-pad
-                world_coordinates_polygons.append(np_polygon.tolist())
-            vis_contours(image=image_orig, contours=world_coordinates_polygons, show_contours=True)
-            return world_coordinates_polygons, 1  # bytes, 1
+            polygons = self.upscale_to_world_coordinates(polygons)
+            # vis_contours(image=image_orig, contours=polygons, show_contours=True)
+            return json.dumps(polygons), 1  # bytes, 1
         except:
             return None, 0
 
