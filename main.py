@@ -5,9 +5,8 @@ from src.split_area import split_area
 
 # debug imports
 from src.ideas.visualize import vis_image, vis_contours, vis_polygon
-from PIL import Image
+
 import numpy as np
-import cv2
 import glob
 from pathlib import Path
 import json
@@ -33,7 +32,7 @@ class EdgeDetector:
     @staticmethod
     def check_annotation_for_bytes(annotations):
         if isinstance(annotations, bytes):
-            return json.loads(annotations)
+            annotations = json.loads(annotations)
         return annotations
 
     @staticmethod
@@ -53,27 +52,31 @@ class EdgeDetector:
             annotation = self.check_annotation_for_bytes(anno_object)
 
             # 1) get crop coordinates
-            cropp_coordinates = self.get_crop_coordinate(annotation, frmt=anno_format)
+            cropp_coordinates = self.get_crop_coordinate(image_orig, annotation, frmt=anno_format)
 
-            # 2) crop image by given coordinates
-            cropped_image = self.get_image_crop(image_orig, cropp_coordinates, pad=pad)
+            all_poly_coordinates = []
+            for cropp_coordinate in cropp_coordinates:
+                # 2) crop image by given coordinates
+                cropped_image = self.get_image_crop(image_orig, cropp_coordinate, pad=pad)
 
-            # 3) get mask -> polygon of given image
-            polygons = self.get_area(
-                cropped_image,
-                area_type='polygon',
-                blur_mode='gaussian_blur',  # gaussian
-                ksize=(7, 7),
-                quantile=0.5,
-                pad=pad
-            )  # vis_polygon(cropped_image, polygons[0])
+                # 3) get mask -> polygon of given image
+                polygons = self.get_area(
+                    cropped_image,
+                    area_type='polygon',
+                    blur_mode='gaussian_blur',  # gaussian
+                    ksize=(7, 7),
+                    quantile=0.5,
+                    pad=pad
+                )  # vis_polygon(cropped_image, polygons[0])
 
-            # 4) split polygon to goods positions
-            polygons = self.split_area(cropped_image, polygons)
+                # 4) split polygon to goods positions
+                polygons = self.split_area(cropped_image, polygons)
 
-            # 5) convert local coordinates to global
-            polygons = self.upscale_to_world_coordinates(polygons)
-            # vis_contours(image=image_orig, contours=polygons, show_contours=True)
+                # 5) convert local coordinates to global
+                polygons = self.upscale_to_world_coordinates(polygons, cropp_coordinate, pad)
+                all_poly_coordinates.extend(polygons)
+
+            vis_contours(image=image_orig, contours=all_poly_coordinates, show_contours=True)
             return json.dumps(polygons), 1  # bytes, 1
         except:
             return None, 0
@@ -131,4 +134,6 @@ def main(anno_frmt='yolo_output'):
 
 
 if __name__ == '__main__':
-    main()
+    anno_frmt = 'yolo_output'
+    # anno_frmt = 'source_data'
+    main(anno_frmt)
