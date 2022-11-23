@@ -67,7 +67,7 @@ def search_anomaly_v3(image, polygon, step_size=20, debug=False):
     # working_data = scroll_poly_to_zero_point(working_data)
     resulting_poly_list = []
     # image_to_draw = image.copy()
-    image_to_draw = np.array(Image.fromarray(image).convert('RGB'))
+    image_to_draw = np.array(Image.fromarray(image.astype(np.uint8)).convert('RGB'))
     for peak in new_intervals:  # peaks:
         x_min, x_max = peak
         if isinstance(working_data, list):
