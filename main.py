@@ -88,7 +88,7 @@ def main():
     )
 
     # 3) loop through images
-    polygons = contour.process(np_image, json_data, anno_format=anno_frmt, pad=0)
+    polygons = contour.process(np_image, json_data, anno_format=anno_frmt, pad=50)
     print('Done')
     return polygons
 
