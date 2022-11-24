@@ -1,3 +1,3 @@
 from .eliminate_holes_and_tiny_objects import eliminate_holes_and_tiny_objects, mask2poly
-from .filter_with_thresholds import auto_thresholding
+from .filter_with_thresholds import auto_thresholding_v1, auto_thresholding_v2, auto_thresholding_v3
 from .get_area import get_area
