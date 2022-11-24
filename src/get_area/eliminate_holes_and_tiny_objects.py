@@ -13,6 +13,14 @@ def mask2poly(mask):
     return all_polygons
 
 
+def polygon2mask(polygons, shape):
+    binary_mask = rasterio.features.rasterize(
+        polygons,
+        out_shape=shape
+    )
+    return (binary_mask*255).astype(np.uint8)
+
+
 def eliminate_holes_and_tiny_objects(target_mask, width, height, eps=None, store_single=True, return_type='polygon',
                                      debug=False):
     assert return_type in ['polygon', 'mask', 'coordinates'], 'Specify correct return type.'
