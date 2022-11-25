@@ -5,7 +5,6 @@ from .utils.eliminate_borders import eliminate_borders
 from .utils.distance import filter_through_manhattan_distance, get_manhattan_distance
 from .utils.intervals import prepare_intervals_v3, get_area_center_point, get_activations_for_interval
 from .utils.filters import filter_polygon_by_indices
-from src.ideas.visualize import vis_polygon
 
 
 def scroll_poly_to_zero_point(polygon):

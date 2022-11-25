@@ -4,7 +4,6 @@ from .stats import get_stats
 from .distance import filter_through_manhattan_distance
 from .filters import filter_polygon_by_indices
 from .polygon_rupture import find_rapture_by_axis
-from src.ideas.visualize import vis_polygon
 
 
 def prepare_intervals(polygon_original, step_size, pix_min_dist=None,

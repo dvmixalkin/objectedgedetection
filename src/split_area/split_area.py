@@ -1,6 +1,5 @@
 from .search_anomaly import search_anomaly_v1, search_anomaly_v2, search_anomaly_v3
 from .search_anomaly.utils import MyPolygon, get_np_points_from_polygon
-from src.ideas.visualize import vis_image, vis_polygon,  vis_contours
 
 # priority_labeler_list = [
 #     'КОМП', 'Александр', 'kayla', 'Сергей', 'Пользователь', 'Сергей', '2002kh', '2002k', 'user', 'asus',
