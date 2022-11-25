@@ -25,14 +25,15 @@ def eliminate_holes_and_tiny_objects(target_mask, width, height, eps=None, store
                                      debug=False):
     assert return_type in ['polygon', 'mask', 'coordinates'], 'Specify correct return type.'
     all_polygons = mask2poly(mask=target_mask)
-    if store_single and all_polygons != []:
-        actual_polygon = None
-        previous_max_area = 0
-        for polygon in all_polygons:
-            if polygon.area > previous_max_area:
-                actual_polygon = polygon
-                previous_max_area = polygon.area
-        all_polygons = [actual_polygon]
+    if all_polygons != []:
+        areas = [polygon.area for polygon in all_polygons]
+        if store_single:
+            all_polygons = all_polygons[areas.index(max(areas))]
+        else:
+            max_area = max(areas)
+            all_polygons = [all_polygons[idx] for idx, area in enumerate(areas) if area/max_area > 0.005]
+    else:
+        return
 
     new_polygons = []
     for polygon in all_polygons:
@@ -53,9 +54,8 @@ def eliminate_holes_and_tiny_objects(target_mask, width, height, eps=None, store
             x, y = new_polygon.exterior.xy
             coordinates = np.vstack([np.array(x.tolist()), np.array(y.tolist())]).transpose().astype(int)
             result.append(coordinates)
-        # result = new_polygons
     elif return_type == 'polygon':
-        return new_polygons
+        result = new_polygons
     else:
         result = (rasterio.features.rasterize(
             new_polygons,
