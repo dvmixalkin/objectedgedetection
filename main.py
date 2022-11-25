@@ -45,14 +45,15 @@ class EdgeDetector:
             world_coordinates_polygons.append(np_polygon.tolist())
         return world_coordinates_polygons
 
-    def process(self, image_object, anno_object, anno_format='yolo_output', pad=50):
+    def process(self, image_object, anno_object, anno_format='yolo_output', pad=[50, 50, 50, 0]):
         try:
             # 0) get data and check for correctness
             image_orig = self.check_image_for_bytes(image_object).astype(np.uint8)
             annotation = self.check_annotation_for_bytes(anno_object)
 
-            # 1) get crop coordinates
-            cropp_coordinates = self.get_crop_coordinate(image_orig, annotation, frmt=anno_format)
+            # 1) get crop coordinates:
+            # 1 - original 2 - per_object
+            cropp_coordinates = self.get_crop_coordinate(image_orig, annotation, frmt=anno_format, version=1)
 
             all_poly_coordinates = []
             for cropp_coordinate in cropp_coordinates:
@@ -89,7 +90,8 @@ def get_toy_data(anno_frmt='yolo_output', index=None):  # ['yolo_output', 'prepr
     elif anno_frmt == 'preprocessed':
         NotImplemented
     elif anno_frmt == 'source_data':
-        dataset_path = '../datasets/DATA3/NOT_DELETE/all_jsons'
+        # dataset_path = '../datasets/DATA3/NOT_DELETE/all_jsons'
+        dataset_path = '../datasets/DATA3'
         filenames = [Path(p) for p in glob.glob(dataset_path + '/**/*.npz')]
     else:
         NotImplemented
@@ -116,7 +118,7 @@ def get_toy_data(anno_frmt='yolo_output', index=None):  # ['yolo_output', 'prepr
 
 def main(anno_frmt='yolo_output'):
     # 0) get image index
-    index = 3
+    index = 0
 
     # 1) initialize image pool
     image_bytes, json_bytes = get_toy_data(anno_frmt, index)
@@ -130,10 +132,10 @@ def main(anno_frmt='yolo_output'):
     )
 
     # 3) loop through images
-    contour.process(image_bytes, json_bytes, anno_format=anno_frmt, pad=50)
+    contour.process(image_bytes, json_bytes, anno_format=anno_frmt, pad=[50, 50, 50, 0])
 
 
 if __name__ == '__main__':
-    anno_frmt = 'yolo_output'
-    # anno_frmt = 'source_data'
+    # anno_frmt = 'yolo_output'
+    anno_frmt = 'source_data'
     main(anno_frmt)
