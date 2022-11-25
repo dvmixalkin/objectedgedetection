@@ -40,7 +40,11 @@ def get_intersected_intervals(intervals, n, sub_interval_len, mean_multiplier=1.
 
     # Если интервалов нет - нет маски
     if intersected_interval_stats == []:
-        return None
+        if intervals != []:
+            for element_idx in range(len(intervals)-1):
+                pass
+        else:
+            return None
 
     # подобрать порог для выбора интервалов
     np_intersected_interval_stats = np.array(intersected_interval_stats)

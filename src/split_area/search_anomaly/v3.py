@@ -43,6 +43,9 @@ def search_anomaly_v3(image, polygon, step_size=20, debug=False):
         step_size,
         image=image
     )
+    if x_hists is None:
+        return polygon
+
     alpha = 25
     new_intervals = []
     for inter_ in x_hists:
