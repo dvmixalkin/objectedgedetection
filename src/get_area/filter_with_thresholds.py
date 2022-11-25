@@ -197,6 +197,55 @@ def triple_plot(image, mask1, mask2):
     ax2.imshow(mask1, cmap=cmap_val)
     ax3.imshow(mask2, cmap=cmap_val)
 
+def find_threshold(image_orig, divider=5, quantile=0.8):
+
+    # collect statistic for each pixel value (0-255)
+    x, bins = np.histogram(image_orig, bins=255)
+
+    # clamp to dence intervals collected data
+    interval_stats = []
+    for element in range((len(x) // divider)):
+        interval_stats.append(
+            [element * divider, (element + 1) * divider, x[element * divider:(element + 1) * divider].sum()])
+
+    # convert to numpy array
+    np_interval_stats = np.array(interval_stats)
+
+    # get peaks through filtering with
+    peaks = np_interval_stats[np_interval_stats[:, 2] > np.quantile(np_interval_stats[:, 2], quantile)]
+
+    # find ruptures in peak value array
+    rupture_values = []
+    for idx in range(peaks.shape[0] - 1):
+        rupture_values.append(peaks[idx + 1, 0] - peaks[idx, 1])
+
+    # separate this array in rupture point to up_side and bot_side
+    divisors_point = rupture_values.index(max(rupture_values)) + 1
+    up_side, bot_side = peaks[:divisors_point], peaks[divisors_point:]
+
+    # get array intervals between 2 peaks
+    # lower bound of upper side
+    up_filtered = np_interval_stats[:, 0] >= up_side[-1, 1]
+
+    # upper bound of lower side
+    bot_filtered = np_interval_stats[:, 1] <= bot_side[0, 0]
+    # intervals between bounds
+    intersection = up_filtered * bot_filtered
+    to_search_minimum = np_interval_stats[intersection]
+
+    # find interval index with minimal pixel count
+    min_value_index = np.argmin(to_search_minimum[:, 2])
+
+    # get interval with minimal pixel count
+    min_value = to_search_minimum[min_value_index]
+
+    # get minimal threshold value
+    hard_threshold = up_side[-1, 1]
+
+    # get maximal threshold value
+    soft_threshold = min_value[1]
+    return [hard_threshold, soft_threshold]
+
 
 def auto_thresholding_v3(image_orig: np.ndarray):
 
@@ -206,42 +255,8 @@ def auto_thresholding_v3(image_orig: np.ndarray):
     from matplotlib import pyplot as plt
     plt.stairs(x, bins)
 
-    def find_threshold(image_orig):
-        x, bins = np.histogram(image_orig, bins=255)
-        #  Алгоритм нахождени я индексов бинов на краях с мксимальными значениями
-
-        divider = 5
-        interval_stats = []
-        for element in range((len(x) // divider)):
-            interval_stats.append([element * divider, (element + 1) * divider, x[element * divider:(element + 1) * divider].sum()])
-
-        np_interval_stats = np.array(interval_stats)
-        peaks = np_interval_stats[np_interval_stats[:, 2] > np.quantile(np_interval_stats[:, 2], 0.8)]
-
-        rupture_values = []
-        for idx in range(peaks.shape[0]-1):
-            rupture_values.append(peaks[idx+1, 0] - peaks[idx, 1])
-        divisors_point = rupture_values.index(max(rupture_values)) + 1
-        up_side, bot_side = peaks[:divisors_point], peaks[divisors_point:]
-
-        up_filtered = np_interval_stats[:, 0] >= up_side[-1, 1]
-        bot_filtered = np_interval_stats[:, 1] <= bot_side[0, 0]
-        intersection = up_filtered * bot_filtered
-        to_search_minimum = np_interval_stats[intersection]
-        min_value_index = np.argmin(to_search_minimum[:, 2])
-        min_value = to_search_minimum[min_value_index]
-
-        hard_threshold = up_side[-1, 1]
-        soft_threshold = min_value[1]
-        return [hard_threshold, soft_threshold]
-
     hard_threshold, soft_threshold = find_threshold(image_orig)
 
     ret_h, thresh_h = cv2.threshold(image_orig, hard_threshold, 255, cv2.THRESH_BINARY_INV)
     ret_s, thresh_s = cv2.threshold(image_orig, soft_threshold, 255, cv2.THRESH_BINARY_INV)
-
-    dual_plot(image_orig, image_orig<5)
-    from src.get_data import equalize_this_v2
-    dual_plot(image_orig,
-              equalize_this_v2(image_file=equalize_this_v2(image_file=image_orig, gray_scale=True), gray_scale=True))
-    pass
+    triple_plot(image_orig, thresh_h, thresh_s)
