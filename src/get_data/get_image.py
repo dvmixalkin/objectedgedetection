@@ -20,10 +20,10 @@ def eliminate_lines(img, columns_range=500, eliminate_vert_lines=True, rows_rang
     return img
 
 
-def get_cropped_image(image, crop_coordinates, pad=0):
+def get_cropped_image(image, crop_coordinates, pad=[0, 0, 0, 0]):
     h, w = image.shape[0], image.shape[1]
     x_min, y_min, x_max, y_max = crop_coordinates
-    cropped_image = image[max(y_min - pad, 0):min(y_max + pad, h), max(x_min - pad, 0):min(x_max + pad, w)]
+    cropped_image = image[max(y_min - pad[1], 0):min(y_max + pad[3], h), max(x_min - pad[0], 0):min(x_max + pad[2], w)]
     return cropped_image
 
 
@@ -36,6 +36,7 @@ def get_image(name, old_version=False):
     img0 = np.copy(img_raw)
     img0 = eliminate_lines(img0)
     img0 = equalize_this_v2(img0.astype(np.uint8), gray_scale=True)
+
     return img0
 
 
