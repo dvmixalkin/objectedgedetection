@@ -40,8 +40,8 @@ class EdgeDetector:
         world_coordinates_polygons = []
         for polygon in polygons:
             np_polygon = np.array(polygon)
-            np_polygon[:, 0] += cropp_coordinates[0] - pad
-            np_polygon[:, 1] += cropp_coordinates[1] - pad
+            np_polygon[:, 0] += cropp_coordinates[0] - pad[0]
+            np_polygon[:, 1] += cropp_coordinates[1] - pad[1]
             world_coordinates_polygons.append(np_polygon.tolist())
         return world_coordinates_polygons
 
@@ -118,7 +118,7 @@ def get_toy_data(anno_frmt='yolo_output', index=None):  # ['yolo_output', 'prepr
 
 def main(anno_frmt='yolo_output'):
     # 0) get image index
-    index = 0
+    index = 2
 
     # 1) initialize image pool
     image_bytes, json_bytes = get_toy_data(anno_frmt, index)
@@ -136,6 +136,6 @@ def main(anno_frmt='yolo_output'):
 
 
 if __name__ == '__main__':
-    # anno_frmt = 'yolo_output'
-    anno_frmt = 'source_data'
+    anno_frmt = 'yolo_output'
+    # anno_frmt = 'source_data'
     main(anno_frmt)
