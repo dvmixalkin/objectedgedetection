@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from .eliminate_holes_and_tiny_objects import eliminate_holes_and_tiny_objects, mask2poly, polygon2mask
+from .eliminate_holes_and_tiny_objects import eliminate_holes_and_tiny_objects, mask2poly, poly2mask
 from .filter_with_thresholds import auto_thresholding_v1, auto_thresholding_v2, auto_thresholding_v3
 from ..split_area.search_anomaly.utils.get_np_points_from_polygon import get_np_points_from_polygon
 
@@ -29,7 +29,7 @@ def dirty_polygon_cleaner(dirty_mask, axis):
     filtered_polygons = [polygons[i] for i in idxs]
 
     # convert back polygons to mask
-    res_mask = polygon2mask(filtered_polygons, dirty_mask.shape)
+    res_mask = poly2mask(filtered_polygons, dirty_mask.shape)
     return res_mask
 
 
@@ -64,7 +64,7 @@ def clean_mask_along_axis(mask, axis):
     filtered_polygons = [polygons[i] for i in idxs]
 
     # convert back polygons to mask
-    dirty_mask = polygon2mask(filtered_polygons, mask.shape)
+    dirty_mask = poly2mask(filtered_polygons, mask.shape)
     cleaned_mask = dirty_polygon_cleaner(dirty_mask, axis)
     return cleaned_mask
 
@@ -90,7 +90,7 @@ def manual_statistical_removing(thresh):
     filtered_polygons = [polygons[i] for i in idxs]
 
     # convert back polygons to mask
-    mask = polygon2mask(filtered_polygons, thresh.shape)
+    mask = poly2mask(filtered_polygons, thresh.shape)
 
     # ============================== remove horizontal artifacts ===================================================== #
     mask = clean_mask_along_axis(mask, axis=1)
@@ -113,17 +113,17 @@ def remove_platform(thresh, pad, original=True):
     if not original:
         thresh, coordinates = manual_statistical_removing(thresh)
 
-    x_min = pad if original else min(pad, coordinates[0])
-    y_min = pad if original else min(pad, coordinates[1])
-    x_max = w-pad if original else max(w-pad, coordinates[2])
-    y_max = h-pad if original else max(h-pad, coordinates[3])
+    x_min = pad[0] if original else min(pad[0], coordinates[0])
+    y_min = pad[1] if original else min(pad[1], coordinates[1])
+    x_max = w-pad[2] if original else max(w-pad[2], coordinates[2])
+    y_max = h-pad[3] if original else max(h-pad[3], coordinates[3])
 
     wo_pad = np.zeros_like(thresh)
     wo_pad[y_min:y_max, x_min:x_max] = thresh[y_min:y_max, x_min:x_max]
     return wo_pad
 
 
-def get_area(img_crop, area_type='mask', blur_mode='gaussian_blur', ksize=(7, 7), quantile=0.5, pad=50):
+def get_area(img_crop, area_type='mask', blur_mode='gaussian_blur', ksize=(7, 7), quantile=0.5, pad=None):
     assert blur_mode in ['simple_blur', 'gaussian_blur', 'no_blur']
     height, width = img_crop.shape[0], img_crop.shape[1]
     if blur_mode == 'simple_blur':
@@ -134,26 +134,15 @@ def get_area(img_crop, area_type='mask', blur_mode='gaussian_blur', ksize=(7, 7)
         image = img_crop
 
     # @TODO Automated thresholding
-    # ret, thresh = auto_thresholding_v2(image, start_position=image.mean() * 2)  #
-    ret, thresh = auto_thresholding_v3(image)
-
-    # # new block
-    # thresh = np.ones_like(image) * 255
-    # mask = image < (image.mean() * 2.)
-    # thresh[mask] = image[mask]
-    # thresh = np.invert(thresh)
-    # # Image.fromarray(thresh).show()
-
-    ret, thresh = cv2.threshold(image.astype(float), image.mean()*2., 255, cv2.THRESH_BINARY_INV)
-    # check for platform and remove it if exists
-
-    thresh = remove_platform(thresh, pad=pad)
-
-    # # to smooth lone pixels
-    # thresh = cv2.GaussianBlur(thresh.astype(np.uint8), (15, 15), 0) > 0
+    # ret, thresh = auto_thresholding_v1(image)
+    # ret, thresh = auto_thresholding_v2(image, start_position=image.mean() * 2)
+    # thresh = remove_platform(thresh, pad=pad)
     # remove holes from mask
-    cleared_mask = eliminate_holes_and_tiny_objects(
-        thresh, width, height, eps=None, return_type=area_type, store_single=False
-    )
+    # cleared_mask = eliminate_holes_and_tiny_objects(
+    #     thresh, eps=None, return_type=area_type, store_single=False
+    # )
+
+    ret, cleared_mask = auto_thresholding_v3(image, pad)
+
     # Image.fromarray(cleared_mask).show()
     return cleared_mask
