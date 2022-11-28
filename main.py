@@ -45,42 +45,51 @@ class EdgeDetector:
             world_coordinates_polygons.append(np_polygon.tolist())
         return world_coordinates_polygons
 
-    def process(self, image_object, anno_object, anno_format='yolo_output', pad=[50, 50, 50, 0]):
-        try:
-            # 0) get data and check for correctness
-            image_orig = self.check_image_for_bytes(image_object).astype(np.uint8)
-            annotation = self.check_annotation_for_bytes(anno_object)
+    def body(self, image_object, anno_object, anno_format='yolo_output', pad=None):
+        # 0) get data and check for correctness
+        if pad is None:
+            pad = [50, 50, 50, 0]
+        image_orig = self.check_image_for_bytes(image_object).astype(np.uint8)
+        annotation = self.check_annotation_for_bytes(anno_object)
 
-            # 1) get crop coordinates:
-            # 1 - original 2 - per_object
-            cropp_coordinates = self.get_crop_coordinate(image_orig, annotation, frmt=anno_format, version=1)
+        # 1) get crop coordinates:
+        # 1 - original 2 - per_object
+        cropp_coordinates = self.get_crop_coordinate(image_orig, annotation, frmt=anno_format, version=1)
 
-            all_poly_coordinates = []
-            for cropp_coordinate in cropp_coordinates:
-                # 2) crop image by given coordinates
-                cropped_image = self.get_image_crop(image_orig, cropp_coordinate, pad=pad)
+        all_poly_coordinates = []
+        for cropp_coordinate in cropp_coordinates:
+            # 2) crop image by given coordinates
+            cropped_image = self.get_image_crop(image_orig, cropp_coordinate, pad=pad)
 
-                # 3) get mask -> polygon of given image
-                polygons = self.get_area(
-                    cropped_image,
-                    area_type='polygon',
-                    blur_mode='gaussian_blur',  # gaussian
-                    ksize=(7, 7),
-                    quantile=0.5,
-                    pad=pad
-                )  # vis_polygon(cropped_image, polygons[0])
+            # 3) get mask -> polygon of given image
+            polygons = self.get_area(
+                cropped_image,
+                area_type='polygon',
+                blur_mode='gaussian_blur',  # gaussian
+                ksize=(7, 7),
+                quantile=0.5,
+                pad=pad
+            )  # vis_polygon(cropped_image, polygons[0])
 
-                # 4) split polygon to goods positions
-                polygons = self.split_area(cropped_image, polygons)
+            # 4) split polygon to goods positions
+            polygons = self.split_area(cropped_image, polygons)
 
-                # 5) convert local coordinates to global
-                polygons = self.upscale_to_world_coordinates(polygons, cropp_coordinate, pad)
-                all_poly_coordinates.extend(polygons)
+            # 5) convert local coordinates to global
+            polygons = self.upscale_to_world_coordinates(polygons, cropp_coordinate, pad)
+            all_poly_coordinates.extend(polygons)
 
-            vis_contours(image=image_orig, contours=all_poly_coordinates, show_contours=True)
-            return json.dumps(polygons), 1  # bytes, 1
-        except:
-            return None, 0
+        vis_contours(image=image_orig, contours=all_poly_coordinates, show_contours=True)
+        return json.dumps(polygons), 1  # bytes, 1
+
+    def process(self, image_object, anno_object, anno_format='yolo_output', pad=None):
+        if pad is None:
+            pad = [50, 50, 50, 0]
+        polygons = self.body(image_object, anno_object, anno_format=anno_format, pad=pad)
+        # try:
+        #     polygons = self.body(self, image_object, anno_object, anno_format=anno_format, pad=pad)
+        #     return json.dumps(polygons), 1
+        # except:
+        #     return None, 0
 
 
 def get_toy_data(anno_frmt='yolo_output', index=None):  # ['yolo_output', 'preprocessed', 'source_data']
