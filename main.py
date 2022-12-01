@@ -1,5 +1,5 @@
 # custom imports
-from src.get_data import get_image, get_cropped_image, get_annotation, get_coordinates_to_crop
+from src.get_data import get_image, get_cropped_image, get_coordinates_to_crop
 from src.get_area import get_area
 from src.split_area import split_area
 
@@ -11,6 +11,27 @@ import glob
 from pathlib import Path
 import json
 import io
+from shapely.geometry import Polygon
+
+
+def get_poly_cls(target_box, annotated_boxes):
+    annotated_boxes = np.array(annotated_boxes)
+    col1 = np.maximum(annotated_boxes[:, 1], target_box[0])
+    col2 = np.maximum(annotated_boxes[:, 2], target_box[1])
+    col3 = np.minimum(annotated_boxes[:, 3], target_box[2])
+    col4 = np.minimum(annotated_boxes[:, 4], target_box[3])
+    lower_bounds = np.stack([col1, col2]).transpose()
+    upper_bounds = np.stack([col3, col4]).transpose()
+    intersection_dims = np.clip(upper_bounds - lower_bounds, a_min=0, a_max=100000)
+    intersection_area = intersection_dims[:, 0] * intersection_dims[:, 1]
+
+    w = annotated_boxes[:, 3] - annotated_boxes[:, 1]
+    h = annotated_boxes[:, 4] - annotated_boxes[:, 2]
+    overall_area = w * h
+    box_area = (target_box[2] - target_box[0]) * (target_box[3] - target_box[1])
+    union = overall_area + box_area - intersection_area
+    iou = intersection_area / union
+    return annotated_boxes[np.argmax(iou)][0], np.argmax(iou)
 
 
 class EdgeDetector:
@@ -52,6 +73,11 @@ class EdgeDetector:
         image_orig = self.check_image_for_bytes(image_object).astype(np.uint8)
         annotation = self.check_annotation_for_bytes(anno_object)
 
+        boxes = annotation['prediction']
+        boxes_to_assign_cls = []
+        for box in boxes:
+            boxes_to_assign_cls.append([box['class'], *box['coord']])
+
         # 1) get crop coordinates:
         # 1 - original 2 - per_object
         cropp_coordinates = self.get_crop_coordinate(image_orig, annotation, frmt=anno_format, version=1)
@@ -78,8 +104,48 @@ class EdgeDetector:
             polygons = self.upscale_to_world_coordinates(polygons, cropp_coordinate, pad)
             all_poly_coordinates.extend(polygons)
 
-        vis_contours(image=image_orig, contours=all_poly_coordinates, show_contours=True)
-        return json.dumps(polygons), 1  # bytes, 1
+        # vis_contours(image=image_orig, contours=all_poly_coordinates, show_contours=True)
+
+        for element in annotation['prediction']:
+            x_min, y_min, x_max, y_max = element['coord']
+            w, h = x_max - x_min, y_max - y_min
+            element['area'] = w * h
+            element['type'] = 'original'
+
+        overall_area = 0
+        number_of_positions = len(all_poly_coordinates)
+        for poly in all_poly_coordinates:
+            poly_array = np.array(poly)
+            xmin = poly_array[:, 0].min()
+            xmax = poly_array[:, 0].max()
+            ymin = poly_array[:, 1].min()
+            ymax = poly_array[:, 1].max()
+            current_box = [xmin, ymin, xmax, ymax]
+            cls, idx = get_poly_cls(current_box, boxes_to_assign_cls)
+            area = Polygon(poly).area
+            overall_area += area
+            try:
+                annotation['prediction'][0]['class_prob']
+                key = 'class_prob'
+            except:
+                annotation['prediction'][idx]['confidence_coeff']
+                key = 'confidence_coeff'
+            annotation['prediction'].append(
+                {
+                    'class': cls,
+                    'coord': poly,
+                    key: annotation['prediction'][idx][key],
+                    'area': area,
+                    'type': 'refined'
+                }
+            )
+        annotation['stats'] = {
+            'overall_area': overall_area,
+            'number_of_positions': number_of_positions
+        }
+        bytes_data = json.dumps(annotation).encode('UTF-8')
+
+        return bytes_data, 1  # bytes, 1
 
     def process(self, image_object, anno_object, anno_format='yolo_output', pad=None):
         if pad is None:
@@ -127,7 +193,7 @@ def get_toy_data(anno_frmt='yolo_output', index=None):  # ['yolo_output', 'prepr
 
 def main(anno_frmt='yolo_output'):
     # 0) get image index
-    index = 2
+    index = 0
 
     # 1) initialize image pool
     image_bytes, json_bytes = get_toy_data(anno_frmt, index)
