@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 from ..eliminate_holes_and_tiny_objects import (eliminate_holes,
                                                 eliminate_tiny_objects,
-                                                eliminate_holes_and_tiny_objects, poly2mask)
+                                                eliminate_holes_and_tiny_objects, poly2mask, mask2poly)
 
 
 # @TODO remove imports when complete the work
@@ -136,56 +136,25 @@ def auto_thresholding_v3(image_orig: np.ndarray, pad: list):
     # contour_coordinates = get_contours(image_orig)
     from .utils import n_plot
 
-    try:
-        hard_threshold, soft_threshold = find_threshold(image_orig, quantile=0.8)
-        ret_h, thresh_h = cv2.threshold(image_orig, hard_threshold, 255, cv2.THRESH_BINARY_INV)
-        ret_s, thresh_s = cv2.threshold(image_orig, soft_threshold, 255, cv2.THRESH_BINARY_INV)
-        ret = [ret_h, ret_s]
-        n_plot(
-            images_dict={
-                'image_orig': image_orig,
-                'thresh_h': thresh_h,
-                'thresh_s': thresh_s
-            },
-            axis=0
-        )
-    except:
-        pass
-    try:
-        hard_threshold_v1, soft_threshold_v1 = find_threshold(image_orig, quantile=0.7)
-        ret_h_v1, thresh_h_v1 = cv2.threshold(image_orig, hard_threshold_v1, 255, cv2.THRESH_BINARY_INV)
-        ret_s_v1, thresh_s_v1 = cv2.threshold(image_orig, soft_threshold_v1, 255, cv2.THRESH_BINARY_INV)
-        ret_v1 = [ret_h_v1, ret_s_v1]
-        n_plot(
-            images_dict={
-                'image_orig': image_orig,
-                'thresh_h_v1': thresh_h_v1,
-                'thresh_s_v1': thresh_s_v1
-            },
-            axis=0
-        )
-    except:
-        pass
-    try:
-        hard_threshold_v2, soft_threshold_v2 = find_threshold(image_orig, quantile=0.9)
-        ret_h_v2, thresh_h_v2 = cv2.threshold(image_orig, hard_threshold_v2, 255, cv2.THRESH_BINARY_INV)
-        ret_s_v2, thresh_s_v2 = cv2.threshold(image_orig, soft_threshold_v2, 255, cv2.THRESH_BINARY_INV)
-        ret_v2 = [ret_h_v2, ret_s_v2]
-        n_plot(
-            images_dict={
-                'image_orig': image_orig,
-                'thresh_h_v2': thresh_h_v2,
-                'thresh_s_v2': thresh_s_v2
-            },
-            axis=0
-        )
-    except:
-        pass
+    hard_threshold, soft_threshold = find_threshold(image_orig, quantile=0.8)
+    ret_h, thresh_h = cv2.threshold(image_orig, hard_threshold, 255, cv2.THRESH_BINARY_INV)
+    ret_s, thresh_s = cv2.threshold(image_orig, soft_threshold, 255, cv2.THRESH_BINARY_INV)
+    ret = [ret_h, ret_s]
+    # n_plot(
+    #     images_dict={
+    #         'image_orig': image_orig,
+    #         'thresh_h': thresh_h,
+    #         'thresh_s': thresh_s
+    #     },
+    #     axis=0
+    # )
 
-    wo_holes = eliminate_holes(thresh_h_v1, thresh_h_v2.shape, return_type='mask')
-    wo_tiny_objects = eliminate_tiny_objects(wo_holes, wo_holes.shape, return_type='polygon')
-    thresh = wo_tiny_objects  # get_divisors(thresh_h_v1, interval_range=[50, 100])
+    wo_tiny_objects = eliminate_tiny_objects(thresh_s, thresh_h.shape, return_type='mask')
+    wo_holes = eliminate_holes(wo_tiny_objects, wo_tiny_objects.shape, return_type='mask')
 
+    thresh = wo_holes  # get_divisors(thresh_h_v1, interval_range=[50, 100])
+    if isinstance(thresh, np.ndarray):
+        thresh = mask2poly(thresh)
     # 2) fill main objects holes
     # thresh = None
 
