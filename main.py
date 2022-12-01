@@ -150,12 +150,12 @@ class EdgeDetector:
     def process(self, image_object, anno_object, anno_format='yolo_output', pad=None):
         if pad is None:
             pad = [50, 50, 50, 0]
-        polygons = self.body(image_object, anno_object, anno_format=anno_format, pad=pad)
-        # try:
-        #     polygons = self.body(self, image_object, anno_object, anno_format=anno_format, pad=pad)
-        #     return json.dumps(polygons), 1
-        # except:
-        #     return None, 0
+        # polygons = self.body(image_object, anno_object, anno_format=anno_format, pad=pad)
+        try:
+            polygons = self.body(image_object, anno_object, anno_format=anno_format, pad=pad)
+            return json.dumps(polygons), 1
+        except:
+            return None, 0
 
 
 def get_toy_data(anno_frmt='yolo_output', index=None):  # ['yolo_output', 'preprocessed', 'source_data']
