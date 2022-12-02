@@ -43,11 +43,9 @@ class EdgeDetector:
 
     @staticmethod
     def check_image_for_bytes(image_orig):
-        try:
-            npz_archive = np.load(io.BytesIO(image_orig))
-            image_orig = get_image(npz_archive)
-        except:
-            pass
+        if isinstance(image_orig, bytes):
+            image_orig = np.load(io.BytesIO(image_orig))
+        image_orig = get_image(image_orig)
         return image_orig
 
     @staticmethod
@@ -145,7 +143,7 @@ class EdgeDetector:
         }
         bytes_data = json.dumps(annotation).encode('UTF-8')
 
-        return bytes_data, 1  # bytes, 1
+        return bytes_data  # bytes, 1
 
     def process(self, image_object, anno_object, anno_format='yolo_output', pad=None):
         if pad is None:
