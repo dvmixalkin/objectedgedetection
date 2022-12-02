@@ -141,17 +141,16 @@ class EdgeDetector:
             'overall_area': overall_area,
             'number_of_positions': number_of_positions
         }
-        bytes_data = json.dumps(annotation).encode('UTF-8')
-
-        return bytes_data  # bytes, 1
+        return annotation  # bytes, 1
 
     def process(self, image_object, anno_object, anno_format='yolo_output', pad=None):
         if pad is None:
             pad = [50, 50, 50, 0]
         # polygons = self.body(image_object, anno_object, anno_format=anno_format, pad=pad)
         try:
-            polygons = self.body(image_object, anno_object, anno_format=anno_format, pad=pad)
-            return json.dumps(polygons), 1
+            annotation = self.body(image_object, anno_object, anno_format=anno_format, pad=pad)
+            bytes_data = json.dumps(annotation).encode('UTF-8')
+            return bytes_data, 1
         except:
             return None, 0
 
